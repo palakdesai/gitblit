@@ -18,10 +18,14 @@ package com.gitblit.auth;
 import java.io.File;
 import java.math.BigInteger;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gitblit.Constants.AccountType;
+import com.gitblit.Constants.Role;
+import com.gitblit.Constants.AuthenticationType;
 import com.gitblit.IStoredSettings;
 import com.gitblit.manager.IRuntimeManager;
 import com.gitblit.manager.IUserManager;
@@ -72,6 +76,8 @@ public abstract class AuthenticationProvider {
 		return serviceName;
 	}
 
+	public abstract AuthenticationType getAuthenticationType();
+
 	protected void setCookie(UserModel user, char [] password) {
 		// create a user cookie
 		if (StringUtils.isEmpty(user.cookie) && !ArrayUtils.isEmpty(password)) {
@@ -115,14 +121,32 @@ public abstract class AuthenticationProvider {
 
 	public abstract void stop();
 
+	/**
+	 * Used to handle requests for requests for pages requiring authentication.
+	 * This allows authentication to occur based on the contents of the request
+	 * itself.
+	 *
+	 * @param httpRequest
+	 * @return
+	 */
+	public abstract UserModel authenticate(HttpServletRequest httpRequest);
+
+	/**
+	 * Used to authentication user/password credentials, both for login form
+	 * and HTTP Basic authentication processing.
+	 *
+	 * @param username
+	 * @param password
+	 * @return
+	 */
 	public abstract UserModel authenticate(String username, char[] password);
 
 	public abstract AccountType getAccountType();
 
 	/**
-	 * Does the user service support changes to credentials?
+	 * Returns true if the users's credentials can be changed.
 	 *
-	 * @return true or false
+	 * @return true if the authentication provider supports credential changes
 	 * @since 1.0.0
 	 */
 	public abstract boolean supportsCredentialChanges();
@@ -131,7 +155,7 @@ public abstract class AuthenticationProvider {
 	 * Returns true if the user's display name can be changed.
 	 *
 	 * @param user
-	 * @return true if the user service supports display name changes
+	 * @return true if the authentication provider supports display name changes
 	 */
 	public abstract boolean supportsDisplayNameChanges();
 
@@ -139,7 +163,7 @@ public abstract class AuthenticationProvider {
 	 * Returns true if the user's email address can be changed.
 	 *
 	 * @param user
-	 * @return true if the user service supports email address changes
+	 * @return true if the authentication provider supports email address changes
 	 */
 	public abstract boolean supportsEmailAddressChanges();
 
@@ -147,9 +171,27 @@ public abstract class AuthenticationProvider {
 	 * Returns true if the user's team memberships can be changed.
 	 *
 	 * @param user
-	 * @return true if the user service supports team membership changes
+	 * @return true if the authentication provider supports team membership changes
 	 */
 	public abstract boolean supportsTeamMembershipChanges();
+
+	/**
+	 * Returns true if the user's role can be changed.
+	 *
+	 * @param user
+	 * @param role
+	 * @return true if the user's role can be changed
+	 */
+	public abstract boolean supportsRoleChanges(UserModel user, Role role);
+
+	/**
+	 * Returns true if the team's role can be changed.
+	 *
+	 * @param user
+	 * @param role
+	 * @return true if the team's role can be changed
+	 */
+	public abstract boolean supportsRoleChanges(TeamModel team, Role role);
 
     @Override
     public String toString() {
@@ -160,6 +202,16 @@ public abstract class AuthenticationProvider {
     	protected UsernamePasswordAuthenticationProvider(String serviceName) {
     		super(serviceName);
     	}
+
+		@Override
+		public UserModel authenticate(HttpServletRequest httpRequest) {
+			return null;
+		}
+
+		@Override
+		public AuthenticationType getAuthenticationType() {
+			return AuthenticationType.CREDENTIALS;
+		}
 
     	@Override
 		public void stop() {
@@ -184,6 +236,11 @@ public abstract class AuthenticationProvider {
 		}
 
 		@Override
+		public UserModel authenticate(HttpServletRequest httpRequest) {
+			return null;
+		}
+
+		@Override
 		public UserModel authenticate(String username, char[] password) {
 			return null;
 		}
@@ -191,6 +248,11 @@ public abstract class AuthenticationProvider {
 		@Override
 		public AccountType getAccountType() {
 			return AccountType.LOCAL;
+		}
+
+		@Override
+		public AuthenticationType getAuthenticationType() {
+			return null;
 		}
 
 		@Override
@@ -212,5 +274,16 @@ public abstract class AuthenticationProvider {
 		public boolean supportsTeamMembershipChanges() {
 			return true;
 		}
+
+		@Override
+		public boolean supportsRoleChanges(UserModel user, Role role) {
+			return true;
+		}
+
+		@Override
+		public boolean supportsRoleChanges(TeamModel team, Role role) {
+			return true;
+		}
+
     }
 }
